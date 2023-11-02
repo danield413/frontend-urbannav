@@ -1,6 +1,8 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
 import NavTop from '@/components/NavTop'
+import MiContexto from '@/context/contextApp'
+import { Providers } from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -11,7 +13,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+
+<html lang="en">
       <head>
       <link
   rel="stylesheet"
@@ -22,7 +25,11 @@ export default function RootLayout({ children }) {
       </head>
       <body className={inter.className}>
         <NavTop />
-        {children}</body>
+        <Providers>
+          {children}
+        </Providers>
+        </body>
     </html>
+
   )
 }
