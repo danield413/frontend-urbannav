@@ -59,51 +59,51 @@ const FormRegisterConductor = () => {
         <Form.Control
           type="email"
           name="correo"
-          placeholder="Tu correo electrónico"
+          placeholder="Correo electrónico"
           required
         />
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
         <label htmlFor="tipoDocumento">
-          Primer Nombre <strong className="text-danger">*</strong>
+          Primer nombre <strong className="text-danger">*</strong>
         </label>
         <Form.Control
           type="text"
           name="primerNombre"
-          placeholder="Primer Nombre"
+          placeholder="Primer nombre"
           required
         />
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">Segundo Nombre</label>
+        <label htmlFor="tipoDocumento">Segundo nombre</label>
         <Form.Control
           type="text"
           name="segundoNombre"
-          placeholder="Segundo Nombre"
+          placeholder="Segundo nombre"
         />
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
         <label htmlFor="tipoDocumento">
-          Primer Apellido <strong className="text-danger">*</strong>
+          Primer apellido <strong className="text-danger">*</strong>
         </label>
         <Form.Control
           type="text"
           name="primerApellido"
-          placeholder="Primer Apellido"
+          placeholder="Primer apellido"
           required
         />
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">Segundo Apellido</label>
+        <label htmlFor="tipoDocumento">Segundo apellido</label>
 
         <Form.Control
           type="text"
           name="segundoApellido"
-          placeholder="Segundo Apellido"
+          placeholder="Segundo apellido"
         />
       </Form.Group>
 

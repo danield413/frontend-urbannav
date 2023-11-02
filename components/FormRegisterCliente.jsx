@@ -48,7 +48,7 @@ const FormRegisterCliente = () => {
         <Form.Control
           type="email"
           name="correo"
-          placeholder="correo electrónico"
+          placeholder="Correo electrónico"
           required
         />
       </Form.Group>
