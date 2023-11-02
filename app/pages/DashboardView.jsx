@@ -1,23 +1,26 @@
 "use client";
 
 import FormLogin from "@/components/FormLogin";
+import { useGlobalState } from "@/hooks/useGlobalState"
+import Link from "next/link"
 import { Col, Container, Row } from "react-bootstrap";
 
 const DashboardView = () => {
+
+  const {user} = useGlobalState()
+
   return (
     <>
-      <Container>
-        <Row>
-          <Col></Col>
-          <Col className="pt-2">
-            <Container className="py-4">
-              <h2 className="py-2">Iniciar sesión</h2>
-              <FormLogin />
-            </Container>
-          </Col>
-          <Col></Col>
+      {
+        user ? <Container>
+            <Row>
+              <h1>Bienvenido</h1>
         </Row>
-      </Container>
+      </Container> : <>
+      <h1>No estás logueado</h1>
+      <Link href="/login" className="btn btn-primary mx-2">Inicia sesión</Link>
+       </>
+      }
     </>
   );
 };

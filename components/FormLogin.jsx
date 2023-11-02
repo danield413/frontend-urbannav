@@ -30,8 +30,15 @@ const FormLogin = () => {
       clave
     })
 
-    setIdUsuario(response.data._id)
-    setCodigo2FA(true)
+    if(response.data.message) {
+      alert(response.data.message)
+      return
+    } else {
+      alert('Se envió un código de autenticación a tu correo electrónico')
+      setIdUsuario(response.data._id)
+      setCodigo2FA(true)
+    }
+
     
   };
 
@@ -50,7 +57,21 @@ const FormLogin = () => {
     const token = response.data.token
     localStorage.setItem('token', token)
 
-    setUser(response.data)
+    console.log(response.data)
+
+    if(response.data.message) {
+      alert(response.data.message)
+      return
+    } else {
+      alert('Bienvenido')
+      setUser({
+        correo: response.data.user.correo,
+        idMongoDB: response.data.user._id,
+        name: response.data.usuarioLogica.primerNombre,
+        role: response.data.user.rolId
+      })
+    }
+
 
   };
 

@@ -2,6 +2,7 @@
 
 import FormLogin from "@/components/FormLogin"
 import { useGlobalState } from "@/hooks/useGlobalState"
+import Link from "next/link"
 import { Col, Container, Row } from "react-bootstrap"
 
 const LoginView = () => {
@@ -11,7 +12,7 @@ const LoginView = () => {
   return (
     <>
           {
-            user ? <h1>Estas logueado! felicidades</h1>
+            user ? <h1>Estas logueado! <Link href="/dashboard" className="btn btn-primary">Ir al Dashboard</Link></h1>
             :  <Container>
             <Row>
               <Col></Col>
