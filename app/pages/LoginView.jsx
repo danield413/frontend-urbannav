@@ -12,7 +12,7 @@ const LoginView = () => {
   return (
     <>
           {
-            user ? <h1>Estas logueado! <Link href="/dashboard" className="btn btn-primary">Ir al Dashboard</Link></h1>
+            user ? <> <h1>Estas logueado! </h1> <Link href="/dashboard" className="btn btn-primary">Ir al Dashboard</Link> </>
             :  <Container>
             <Row>
               <Col></Col>

@@ -15,13 +15,17 @@ export default function RegisterPage() {
     console.log(isClient)
 
     const toggleClient = () => {
-        setIsClient(!isClient)
+        setIsClient(true)
+    }
+
+    const toggleConductor = () => {
+        setIsClient(false)
     }
 
   return (
    <>
     {
-      user ? <h1>Estas logueado! <Link href="/dashboard" className="btn btn-primary">Ir al Dashboard</Link></h1>
+      user ? <> <h1>Estas logueado!</h1> <Link href="/dashboard" className="btn btn-primary">Ir al Dashboard</Link> </>
       :  <Container className="py-4">
       <Row>
           <Col>
@@ -30,15 +34,15 @@ export default function RegisterPage() {
               <p className="text-muted text-center">Selecciona el tipo de registro</p>
               <Row className="d-flex flex-row align-items-center">
               <div className="btn-group mb-2" role="group" aria-label="Basic example">
-                  <button type="button" className="btn btn-primary" onClick={toggleClient}>Conductor</button>
-                  <button type="button" className="btn btn-primary" onClick={toggleClient}>Cliente</button>
+                  <button type="button" className={`btn ${isClient ? 'btn-outline-primary' : 'btn-primary'}`} onClick={toggleConductor}>Conductor</button>
+                  <button type="button" className={`btn ${!isClient ? 'btn-outline-primary' : 'btn-primary'}`} onClick={toggleClient}>Cliente</button>
               </div>
               </Row>
           </Col>
           <Col></Col>
       </Row>
         <Row>
-          <col></col>
+          <Col></Col>
           <Col>
             <Container>
               {
@@ -58,7 +62,7 @@ export default function RegisterPage() {
               }
             </Container>
           </Col>
-          <col></col>
+          <Col></Col>
         </Row>
       </Container>
     }
