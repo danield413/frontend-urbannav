@@ -1,5 +1,7 @@
 'use client'
+import axios from "axios"
 import { Button, Col, Container, Form, Row } from "react-bootstrap"
+import toast, { Toaster } from "react-hot-toast"
 
 const FormRegisterConductor = () => {
 
@@ -15,7 +17,7 @@ const FormRegisterConductor = () => {
     const celular = e.target.celular.value;
     const urlFoto = ''
     const estado = 'ACTIVO'
-    const fechaNacimiento = e.target.fechaNacimiento.value;
+    const fechaNacimiento = `${e.target.fechaNacimiento.value}T19:25:30.199Z`;
     const documentoIdentidad = e.target.documentoIdentidad.value;
     const estadoServicio = 'NO DISPONIBLE'
     const placa = e.target.placa.value;
@@ -47,13 +49,33 @@ const FormRegisterConductor = () => {
     }
 
     // llamar a seguridad para registrar cliente
-
+    toast.promise(
+      axios.post('http://localhost:3001/usuario/conductor', data),
+      {
+        duration: 4000,
+        loading: 'Registrando conductor...',
+        success: (res) => {
+          if(res.data.message) {
+            return res.data.message
+          } else {
+            //reset form
+            e.target.reset()
+            return 'Conductor registrado correctamente 😊, se te envió un correo de bienvenida con tu clave.'
+          }
+        },
+        error: (err) => {
+          console.log(err)
+          return 'Error al registrar conductor'
+        }
+      }
+    )
   }
 
   return (
-    <Form>
+    <>
+    <Form onSubmit={handleSubmit} className="animate__animated animate__fadeIn">
      <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Correo electrónico <strong className="text-danger">*</strong>
         </label>
         <Form.Control
@@ -65,7 +87,7 @@ const FormRegisterConductor = () => {
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Primer nombre <strong className="text-danger">*</strong>
         </label>
         <Form.Control
@@ -77,7 +99,7 @@ const FormRegisterConductor = () => {
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">Segundo nombre</label>
+        <label htmlFor="tipoDocumento" className="text-white">Segundo nombre</label>
         <Form.Control
           type="text"
           name="segundoNombre"
@@ -86,7 +108,7 @@ const FormRegisterConductor = () => {
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Primer apellido <strong className="text-danger">*</strong>
         </label>
         <Form.Control
@@ -98,7 +120,7 @@ const FormRegisterConductor = () => {
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">Segundo apellido</label>
+        <label htmlFor="tipoDocumento" className="text-white">Segundo apellido</label>
 
         <Form.Control
           type="text"
@@ -108,56 +130,56 @@ const FormRegisterConductor = () => {
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Celular <strong className="text-danger">*</strong>
         </label>
         <Form.Control type="text" placeholder="Celular" name="celular" required/>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Fecha de nacimiento <strong className="text-danger">*</strong>
         </label>
         <Form.Control type="date" name="fechaNacimiento" required/>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Documento de identidad <strong className="text-danger">*</strong>
         </label>
         <Form.Control type="text" name="documentoIdentidad" required placeholder="Documento de identidad"/>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Placa del vehículo <strong className="text-danger">*</strong>
         </label>
         <Form.Control type="text" name="placa" required placeholder="Placa"/>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Marca del vehículo <strong className="text-danger">*</strong>
         </label>
         <Form.Control type="text" name="marca" required placeholder="Marca"/>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Modelo del vehículo <strong className="text-danger">*</strong>
         </label>
-        <Form.Control type="text" name="modelo" required placeholder="Soat"/>
+        <Form.Control type="text" name="modelo" required placeholder="Modelo"/>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Soat del vehículo <strong className="text-danger">*</strong>
         </label>
-        <Form.Control type="text" name="soat" required placeholder="Modelo"/>
+        <Form.Control type="text" name="soat" required placeholder="Soat"/>
       </Form.Group>
 
       <Form.Group className="mb-3" controlId="formBasicEmail">
-        <label htmlFor="tipoDocumento">
+        <label htmlFor="tipoDocumento" className="text-white">
           Tecnomecánica del vehículo <strong className="text-danger">*</strong>
         </label>
         <Form.Control type="text" name="tecno" required placeholder="Tecnomecánica"/>
@@ -167,6 +189,11 @@ const FormRegisterConductor = () => {
         Registrarse
     </Button>
     </Form>
+    <Toaster
+      position="bottom-left"
+      reverseOrder={false}
+    />
+    </>
   )
 }
 

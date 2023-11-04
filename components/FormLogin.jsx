@@ -2,12 +2,15 @@
 import { useGlobalState } from "@/hooks/useGlobalState"
 import axios from "axios"
 import { MD5 } from "crypto-js"
+import { useRouter } from "next/navigation"
 import { useState } from "react";
 import { Button, Col, Container, Form, Row } from "react-bootstrap";
+import toast, { Toaster } from "react-hot-toast"
 
 const FormLogin = () => {
 
   const { user, setUser } = useGlobalState()
+  const router = useRouter()
 
   const [idUsuario, setIdUsuario] = useState(''); 
   const [codigo2FA, setCodigo2FA] = useState(false);
@@ -24,55 +27,63 @@ const FormLogin = () => {
 
     const clave = cifrar(password);
 
-    // llamar a seguridad para verificar
-    const response = await axios.post('http://localhost:3001/identificar-usuario' , {
-      correo, 
-      clave
-    })
-
-    if(response.data.message) {
-      alert(response.data.message)
-      return
-    } else {
-      alert('Se envió un código de autenticación a tu correo electrónico')
-      setIdUsuario(response.data._id)
-      setCodigo2FA(true)
-    }
-
-    
+    toast.promise(
+      axios.post('http://localhost:3001/identificar-usuario' , {
+        correo, 
+        clave
+      }),
+      {
+        duration: 4000,
+        loading: 'Iniciando sesión...',
+        success: (res) => {
+          if(res.data.message) {
+            return res.data.message
+          } else {
+            setIdUsuario(res.data._id)
+            setCodigo2FA(true)
+            return 'Se ha enviado un correo electrónico con el código 😊'
+          }
+        },
+        error: (err) => {
+          console.log(err)
+          return 'Error al iniciar sesión'
+        }
+      }
+    )
   };
 
   const handleSubmit2FA = async (e) => {
     e.preventDefault();
     const codigo = e.target[0].value;
 
-    // llamar a seguridad para verificar codigo 2fa
-    const response = await axios.post('http://localhost:3001/verificar-2fa', {
-      codigo2fa: codigo,
-      usuarioId: idUsuario
-    })
-
-    console.log(response.data)
-
-    const token = response.data.token
-    localStorage.setItem('token', token)
-
-    console.log(response.data)
-
-    if(response.data.message) {
-      alert(response.data.message)
-      return
-    } else {
-      alert('Bienvenido')
-      setUser({
-        correo: response.data.user.correo,
-        idMongoDB: response.data.user._id,
-        name: response.data.usuarioLogica.primerNombre,
-        role: response.data.user.rolId
-      })
-    }
-
-
+    toast.promise(
+      axios.post('http://localhost:3001/verificar-2fa' , {
+        codigo2fa: codigo,
+        usuarioId: idUsuario
+      }),
+      {
+        duration: 4000,
+        loading: 'Iniciando sesión...',
+        success: (res) => {
+          if(res.data.message) {
+            return res.data.message
+          } else {
+            localStorage.setItem('token', res.data.token)
+            setUser({
+              correo: res.data.user.correo,
+              idMongoDB: res.data.user._id,
+              name: res.data.usuarioLogica.primerNombre,
+              role: res.data.user.rolId
+            })
+            return `Hola, ${res.data.usuarioLogica.primerNombre} 👋`
+          }
+        },
+        error: (err) => {
+          console.log(err)
+          return 'Error al iniciar sesión'
+        }
+      }
+    ) 
   };
 
   return (
@@ -80,13 +91,15 @@ const FormLogin = () => {
       {!codigo2FA ? (
         <Form onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formBasicEmail">
+            <Form.Label className="text-white">Correo electrónico <strong className="text-danger">*</strong></Form.Label>
             <Form.Control
               type="email"
-              placeholder="Ingresa tu correo electrónico"
+              placeholder="Correo electrónico"
             />
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formBasicPassword">
+            <Form.Label className="text-white">Contraseña <strong className="text-danger">*</strong></Form.Label>
             <Form.Control type="password" placeholder="Ingresa tu contraseña" />
           </Form.Group>
 
@@ -96,8 +109,8 @@ const FormLogin = () => {
         </Form>
       ) : (
         <Form onSubmit={handleSubmit2FA}>
-          <h3 className="py-2">Autenticación de 2do Factor</h3>
-          <p className="text-muted">
+          <h3 className="py-2 text-dark bg-white px-2 py-3 text-center rounded fw-bold">Autenticación de segundo factor</h3>
+          <p className="text-white">
             Te enviamos un código, revisa tu correo.
           </p>
           <Form.Group className="mb-3" controlId="formBasicEmail">
@@ -112,6 +125,10 @@ const FormLogin = () => {
           </Button>
         </Form>
       )}
+      <Toaster
+        position="bottom-left"
+        reverseOrder={false}
+      />
     </>
   );
 };

@@ -1,8 +1,9 @@
 'use client'
+import AlertScreen from "@/components/Alert"
 import FormRegisterCliente from "@/components/FormRegisterCliente";
 import FormRegisterConductor from "@/components/FormRegisterConductor";
 import { useGlobalState } from "@/hooks/useGlobalState"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Col, Container, Row } from "react-bootstrap";
 
@@ -11,6 +12,7 @@ export default function RegisterPage() {
     const [isClient, setIsClient] = useState(true)
 
     const { user } = useGlobalState()
+    const router = useRouter()
 
     console.log(isClient)
 
@@ -25,7 +27,9 @@ export default function RegisterPage() {
   return (
    <>
     {
-      user ? <> <h1>Estas logueado!</h1> <Link href="/dashboard" className="btn btn-primary">Ir al Dashboard</Link> </>
+      user ? <> 
+        {router.push("/dashboard")}
+      </>
       :  <Container className="py-4">
       <Row>
           <Col>
@@ -48,14 +52,15 @@ export default function RegisterPage() {
               {
                   isClient ? (
                       <>
-                          <h2 className="text-white bg-dark p-2 rounded">Registro Cliente</h2>
-                          <p className="text-muted">Sé un nuevo cliente</p>
+                          <h2 className="text-dark fw-bold bg-info px-5 py-3 rounded text-center">Registro de Cliente</h2>
+
+                          {/* <p className="text-secondary">Sé un nuevo cliente</p> */}
                           <FormRegisterCliente />
                       </>
                   ) : (
                       <>
-                          <h2 className="text-white bg-dark p-2 rounded">Registro Conductor</h2>
-                          <p className="text-muted">Sé un nuevo conductor</p>
+                         <h2 className="text-dark fw-bold bg-info px-5 py-3 rounded text-center">Registro de Conductor</h2>
+                          {/* <p className="text-secondary">Sé un nuevo conductor</p> */}
                           <FormRegisterConductor />
                       </>
                   )
