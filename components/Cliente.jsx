@@ -6,12 +6,29 @@ const Cliente = () => {
 
   const [recorridos, setRecorridos] = useState([])
   const [loading, setLoading] = useState(false)
+  const [conductor, setConductor] = useState(null)
 
-  const handleSolicitar = (e) => {
+  const handleSolicitar = async (e) => {
     e.preventDefault()
     const idRecorrido = e.target[0].value
 
-    console.log(idRecorrido)
+    const { data } = await axios.get(`http://localhost:3000/recorrido/${idRecorrido}`)
+    const barrioOrigenId = data.barrioOrigenId
+    const barrioDestinoId = data.barrioDestinoId
+
+    //send header bearer token and body
+    const resp = await axios.post('http://localhost:3000/recorrido/solicitar', {
+      barrioOrigenId,
+      barrioDestinoId
+    }, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+
+    console.log('conductor más cercano' , resp.data)
+    setConductor(resp.data)
+    
     
   }
 
@@ -34,7 +51,9 @@ const Cliente = () => {
 
         <h1 className='text-white text-center fw-bold'>Solicita tu servicio</h1>
         <div className="container">
-          <form className="w-50" style={{margin: '0 auto'}} onSubmit={handleSolicitar}>
+          {
+            !conductor ? <>
+              <form className="w-50" style={{margin: '0 auto'}} onSubmit={handleSolicitar}>
               <label htmlFor="" className="text-white mb-2">Selecciona el recorrido</label>
             {
               loading ? <p className='text-white'>Cargando...</p>
@@ -52,6 +71,16 @@ const Cliente = () => {
           !loading && <button type="submit" className='btn btn-primary mt-2'>Solicitar</button>
          }
           </form>
+            </>
+            : <>
+              <h1 className='text-white text-center fw-bold'>Conductor asignado</h1>
+              <div className="card w-50" style={{margin: '0 auto'}}>
+                <div className="card-body">
+                  <h5 className="card-title">Conductor: {conductor.primerNombre} {conductor.primerApellido}</h5>
+                </div>
+              </div>
+            </>
+          }
         </div>
     </div>
   )
