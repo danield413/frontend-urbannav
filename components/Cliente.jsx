@@ -5,8 +5,36 @@ import React, { useEffect, useState } from 'react'
 const Cliente = () => {
 
   const [recorridos, setRecorridos] = useState([])
+  const [recorridoSolicitado, setRecorridoSolicitado] = useState(null)
   const [loading, setLoading] = useState(false)
   const [conductor, setConductor] = useState(null)
+
+  console.log(conductor)
+
+  const aceptarConductor = () => {
+    //TODO: OK
+    console.log("OK ESE CONDUCTOR")
+  }
+
+  const rechazarConductor = async  () => {
+    console.log("NO, OTRO CONDUCTOR")
+
+    const { barrioOrigenId, barrioDestinoId } = recorridoSolicitado
+
+    const resp = await axios.post('http://localhost:3000/recorrido/solicitar', {
+      barrioOrigenId,
+      barrioDestinoId,
+      conductorId: conductor.idMongoDB
+    }, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+
+    console.log('NUEVO conductor más cercano' , resp.data)
+    setConductor(resp.data)
+
+  }
 
   const handleSolicitar = async (e) => {
     e.preventDefault()
@@ -19,7 +47,8 @@ const Cliente = () => {
     //send header bearer token and body
     const resp = await axios.post('http://localhost:3000/recorrido/solicitar', {
       barrioOrigenId,
-      barrioDestinoId
+      barrioDestinoId,
+      conductorId: ''
     }, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -28,6 +57,11 @@ const Cliente = () => {
 
     console.log('conductor más cercano' , resp.data)
     setConductor(resp.data)
+
+    setRecorridoSolicitado({
+      barrioOrigenId,
+      barrioDestinoId
+    })
     
     
   }
@@ -78,6 +112,15 @@ const Cliente = () => {
                 <div className="card-body">
                   <h5 className="card-title">Conductor: {conductor.primerNombre} {conductor.primerApellido}</h5>
                 </div>
+              <div className="row">
+                <div className="col d-flex justify-content-center">
+                <button className="btn btn-primary" onClick={aceptarConductor}>Aceptar</button>
+                </div>
+                <div className="col d-flex justify-content-center">
+                <button className="btn btn-warning" onClick={rechazarConductor}>Quiero otro conductor</button>
+
+                </div>
+              </div>
               </div>
             </>
           }
