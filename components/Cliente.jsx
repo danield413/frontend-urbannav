@@ -1,6 +1,7 @@
 'use client'
 import axios from 'axios'
 import React, { useEffect, useState } from 'react'
+import toast, { Toaster } from 'react-hot-toast'
 
 const Cliente = () => {
 
@@ -8,6 +9,7 @@ const Cliente = () => {
   const [recorridoSolicitado, setRecorridoSolicitado] = useState(null)
   const [loading, setLoading] = useState(false)
   const [conductor, setConductor] = useState(null)
+  const[precioRecorridoSolicitado, setPrecioRecorridoSolicitado] = useState(0)
 
   console.log(conductor)
 
@@ -40,30 +42,50 @@ const Cliente = () => {
     e.preventDefault()
     const idRecorrido = e.target[0].value
 
+    const respCosto = await axios.get(`http://localhost:3000/precio-recorrido/${idRecorrido}`)
+    
+    toast((t) => (
+      <span>
+        Tu servicio costará <strong>${respCosto.data.precio}</strong> pesos 
+        <button onClick={() => toast.dismiss(t.id)} className='btn btn-warning m-2'>
+          Cancelar
+        </button>
+        <button onClick={() => {
+          toast.dismiss(t.id)
+          setPrecioRecorridoSolicitado(respCosto.data.precio)
+          pedirServicio(idRecorrido)
+          
+        }} className='btn btn-primary m-2'>
+          Aceptar
+        </button>
+      </span>
+    ))
+    
+  }
+
+  const pedirServicio = async (idRecorrido) => {
     const { data } = await axios.get(`http://localhost:3000/recorrido/${idRecorrido}`)
     const barrioOrigenId = data.barrioOrigenId
     const barrioDestinoId = data.barrioDestinoId
 
-    //send header bearer token and body
-    const resp = await axios.post('http://localhost:3000/recorrido/solicitar', {
-      barrioOrigenId,
-      barrioDestinoId,
-      conductorId: ''
-    }, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
+    // //send header bearer token and body
+    // const resp = await axios.post('http://localhost:3000/recorrido/solicitar', {
+    //   barrioOrigenId,
+    //   barrioDestinoId,
+    //   conductorId: ''
+    // }, {
+    //   headers: {
+    //     Authorization: `Bearer ${localStorage.getItem('token')}`
+    //   }
+    // })
 
-    console.log('conductor más cercano' , resp.data)
-    setConductor(resp.data)
+    // console.log('conductor más cercano' , resp.data)
+    // setConductor(resp.data)
 
-    setRecorridoSolicitado({
-      barrioOrigenId,
-      barrioDestinoId
-    })
-    
-    
+    // setRecorridoSolicitado({
+    //   barrioOrigenId,
+    //   barrioDestinoId
+    // })
   }
 
 
@@ -74,9 +96,13 @@ const Cliente = () => {
       const res = await axios.get('http://localhost:3000/recorrido')
       console.log(res)
       setRecorridos(res.data)
+      localStorage.setItem('recorridos', JSON.stringify(res.data))
       setLoading(false)
     }
-    getRecorridos()
+
+    if(localStorage.getItem('recorridos')) setRecorridos(JSON.parse(localStorage.getItem('recorridos')))
+    else getRecorridos()
+
   }, [])
 
   return (
@@ -112,9 +138,9 @@ const Cliente = () => {
                 <div className="card-body">
                   <h5 className="card-title">Conductor: {conductor.primerNombre} {conductor.primerApellido}</h5>
                 </div>
-              <div className="row">
+              <div className="d-grid gap-2 col-12">
                 <div className="col d-flex justify-content-center">
-                <button className="btn btn-primary" onClick={aceptarConductor}>Aceptar</button>
+                <button className="btn btn-primary" onClick={aceptarConductor}>Aceptar servicio</button>
                 </div>
                 <div className="col d-flex justify-content-center">
                 <button className="btn btn-warning" onClick={rechazarConductor}>Quiero otro conductor</button>
@@ -125,6 +151,8 @@ const Cliente = () => {
             </>
           }
         </div>
+
+       
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { Container, Nav, Navbar } from 'react-bootstrap'
 import { usePathname } from "next/navigation";
 import { useGlobalState } from '@/hooks/useGlobalState'
 import toast, { Toaster } from 'react-hot-toast'
+import axios from 'axios'
 
 const NavTop = () => {
 
@@ -12,9 +13,7 @@ const NavTop = () => {
 
   const { user, setUser } = useGlobalState()
 
-  console.log(user)
-
-  const logout = () => {
+  const logout = async () => {
     toast.success('Sesión cerrada correctamente')
     setUser(null)
     localStorage.removeItem('token')
