@@ -40,6 +40,13 @@ const Conductor = () => {
     })
 
     socket.on('message', (data) => {
+      console.log(data.idMongoDB, user.idMongoDB, data.idMongoDB === user.idMongoDB)
+      if(data.idMongoDB) {
+          if(data.idMongoDB === user.idMongoDB) {
+            console.log('tienes un nuevo servicio')
+            toast('Tienes un nuevo servicio')
+          }
+      }
       console.log("MSG", data)
     })
 
