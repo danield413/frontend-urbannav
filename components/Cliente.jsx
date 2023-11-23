@@ -1,7 +1,9 @@
 'use client'
+import { useGlobalState } from '@/hooks/useGlobalState'
 import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import { io } from 'socket.io-client'
 
 const Cliente = () => {
 
@@ -10,33 +12,9 @@ const Cliente = () => {
   const [loading, setLoading] = useState(false)
   const [conductor, setConductor] = useState(null)
   const[precioRecorridoSolicitado, setPrecioRecorridoSolicitado] = useState(0)
+  const [socket, setSocket] = useState(null);
+  const { user } = useGlobalState()
 
-  console.log(conductor)
-
-  const aceptarConductor = () => {
-    //TODO: OK
-    console.log("OK ESE CONDUCTOR")
-  }
-
-  const rechazarConductor = async  () => {
-    console.log("NO, OTRO CONDUCTOR")
-
-    const { barrioOrigenId, barrioDestinoId } = recorridoSolicitado
-
-    const resp = await axios.post('http://localhost:3000/recorrido/solicitar', {
-      barrioOrigenId,
-      barrioDestinoId,
-      conductorId: conductor.idMongoDB
-    }, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    })
-
-    console.log('NUEVO conductor más cercano' , resp.data)
-    setConductor(resp.data)
-
-  }
 
   const handleSolicitar = async (e) => {
     e.preventDefault()
@@ -68,25 +46,59 @@ const Cliente = () => {
     const barrioOrigenId = data.barrioOrigenId
     const barrioDestinoId = data.barrioDestinoId
 
-    // //send header bearer token and body
-    // const resp = await axios.post('http://localhost:3000/recorrido/solicitar', {
-    //   barrioOrigenId,
-    //   barrioDestinoId,
-    //   conductorId: ''
-    // }, {
-    //   headers: {
-    //     Authorization: `Bearer ${localStorage.getItem('token')}`
-    //   }
-    // })
-
-    // console.log('conductor más cercano' , resp.data)
-    // setConductor(resp.data)
-
-    // setRecorridoSolicitado({
-    //   barrioOrigenId,
-    //   barrioDestinoId
-    // })
+    const resp2 = await axios.post('http://localhost:3000/recorrido/solicitar/conductores-cercanos', {
+      barrioOrigenId,
+      barrioDestinoId,
+      conductorId: ''
+    })
+    
+    const conductoresCercanos = resp2.data
+    toast.success(`Conductores cercanos: ${resp2.data.length}. Les avisamos que deseas un servicio!`)
+    
+   sendMessage({
+    conductoresCercanos,
+    cliente: user.idMongoDB,
+   })
+    
   }
+
+  const sendMessage = useCallback(( data ) => {
+
+    if(socket) {
+      socket.emit('alertar-conductores', data)
+    } else {
+      console.log('no hay socket')
+    }
+
+  }, [socket]);
+
+  useEffect(() => {
+  
+    if(!socket) {
+      setSocket(
+        io('http://localhost:5050', { 
+          query: {
+              idUsuario: user.idMongoDB,
+              tipoUsuario: 'CLIENTE'
+          },
+      }))
+      return
+    };
+
+    socket.on('connect', () => {
+      console.log('conectado')
+    })
+
+    socket.on('message', (data) => {
+      console.log("MSG", data)
+    })
+
+    return () => {
+      socket.off('connect')
+      socket.off('message')
+    }
+
+  }, [socket]);
 
 
   //useffect to call recorridos
@@ -136,14 +148,14 @@ const Cliente = () => {
               <h1 className='text-white text-center fw-bold'>Conductor asignado</h1>
               <div className="card w-50" style={{margin: '0 auto'}}>
                 <div className="card-body">
-                  <h5 className="card-title">Conductor: {conductor.primerNombre} {conductor.primerApellido}</h5>
+                  {/* <h5 className="card-title">Conductor: {conductor.primerNombre} {conductor.primerApellido}</h5> */}
                 </div>
               <div className="d-grid gap-2 col-12">
                 <div className="col d-flex justify-content-center">
-                <button className="btn btn-primary" onClick={aceptarConductor}>Aceptar servicio</button>
+                {/* <button className="btn btn-primary" onClick={aceptarConductor}>Aceptar servicio</button> */}
                 </div>
                 <div className="col d-flex justify-content-center">
-                <button className="btn btn-warning" onClick={rechazarConductor}>Quiero otro conductor</button>
+                {/* <button className="btn btn-warning" onClick={rechazarConductor}>Quiero otro conductor</button> */}
 
                 </div>
               </div>

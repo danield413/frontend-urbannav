@@ -83,7 +83,6 @@ const Conductor = () => {
       const usuarioIdLogica = resp.data.idConductor;
   
       const resp2 = await axios.patch(`http://localhost:3000/conductor/${usuarioIdLogica}`, {
-        barrioId: 1,
         estadoServicio: 'LIBRE'
       })
   
