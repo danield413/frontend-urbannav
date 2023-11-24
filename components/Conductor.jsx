@@ -15,6 +15,9 @@ const Conductor = () => {
   const [ esperandoServicios, setEsperandoServicios ] = useState(false)
   const [isConnected, setIsConnected] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [servicios, setServicios] = useState([])
+
+  console.log(servicios)
 
   useEffect(() => {
     const getBarrios = async () => {
@@ -39,15 +42,32 @@ const Conductor = () => {
       console.log('conectado')
     })
 
-    socket.on('message', (data) => {
-      console.log(data.idMongoDB, user.idMongoDB, data.idMongoDB === user.idMongoDB)
-      if(data.idMongoDB) {
-          if(data.idMongoDB === user.idMongoDB) {
-            console.log('tienes un nuevo servicio')
-            toast('Tienes un nuevo servicio')
-          }
-      }
-      console.log("MSG", data)
+    socket.on('nuevo-servicio', (data) => {
+      console.log('MSG', data)
+      const nombreCliente = data.cliente.usuarioEnLogica.primerNombre
+      const apellidoCliente = data.cliente.usuarioEnLogica.primerApellido
+      const barrioOrigen = data.recorrido.barrioOrigen.nombreBarrio
+      const barrioDestino = data.recorrido.barrioDestino.nombreBarrio
+      const precio = data.precio
+
+      const texto = `El cliente ${nombreCliente} ${apellidoCliente} ha solicitado un servicio desde ${barrioOrigen} hasta ${barrioDestino} por un valor de ${precio}`
+      
+      setServicios([...servicios, {
+        nombreCliente,
+        apellidoCliente,
+        barrioOrigen,
+        barrioDestino,
+        precio
+      }])
+
+      toast('Tienes un nuevo servicio disponible, apurate! 🔥', {
+        icon: '🚀',
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      })
     })
 
     return () => {
@@ -157,6 +177,19 @@ const Conductor = () => {
            }
            {
             esperandoServicios && <>
+              <h1 className='text-white text-center fw-bold'>Servicios disponibles</h1>
+              {
+                servicios.length > 0 ? servicios.map(servicio => (
+                  <div class="alert alert-primary" role="alert">
+                    <h4>{servicio.nombreCliente} {servicio.apellidoCliente}</h4>
+                    <hr />
+                    <p><strong>Desde:</strong> {servicio.barrioOrigen}</p>
+                    <p><strong>Hasta:</strong> {servicio.barrioDestino}</p>
+                    <p><strong>Precio:</strong> {servicio.precio}</p>
+                    <button className='btn btn-primary'>Aceptar servicio</button>
+                  </div>
+                )) : <p className='text-white'>No hay servicios disponibles</p>
+              }
               <h3 className='text-white text-center fw-bold'>Esperando servicios...</h3>
               <button className='btn btn-danger mt-2' onClick={() => {
                 cerrarSocket()

@@ -45,6 +45,11 @@ const Cliente = () => {
     const { data } = await axios.get(`http://localhost:3000/recorrido/${idRecorrido}`)
     const barrioOrigenId = data.barrioOrigenId
     const barrioDestinoId = data.barrioDestinoId
+    console.log(data)
+
+    const recorridos = localStorage.getItem('recorridos')
+    const recorridosParse = JSON.parse(recorridos)
+    const recorridoSolicitado = recorridosParse.find(r => r.recorrido.idRecorrido === Number(idRecorrido))
 
     const resp2 = await axios.post('http://localhost:3000/recorrido/solicitar/conductores-cercanos', {
       barrioOrigenId,
@@ -55,9 +60,14 @@ const Cliente = () => {
     const conductoresCercanos = resp2.data
     toast.success(`Conductores cercanos: ${resp2.data.length}. Les avisamos que deseas un servicio!`)
     
+    const usuario = await axios.get(`http://localhost:3001/usuario/${user.idMongoDB}`)
+    const usuarioData = usuario.data
+
    sendMessage({
     conductoresCercanos,
-    cliente: user.idMongoDB,
+    cliente: usuarioData,
+    recorrido: recorridoSolicitado,
+    precio: precioRecorridoSolicitado
    })
     
   }
