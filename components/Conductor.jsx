@@ -2,7 +2,7 @@
 import { useGlobalState } from '@/hooks/useGlobalState'
 // import { socket, socket } from '@/socket/socket'
 import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { io } from 'socket.io-client'
 
@@ -53,6 +53,8 @@ const Conductor = () => {
       const texto = `El cliente ${nombreCliente} ${apellidoCliente} ha solicitado un servicio desde ${barrioOrigen} hasta ${barrioDestino} por un valor de ${precio}`
       
       setServicios( prevServicios => [...prevServicios, {
+        idCliente: data.cliente.usuario._id,
+        id: data.id,
         nombreCliente,
         apellidoCliente,
         barrioOrigen,
@@ -69,6 +71,25 @@ const Conductor = () => {
           color: '#fff',
         },
       })
+    })
+
+    socket.on('actualizacion-servicios', (data) => {
+      console.log('servicio borrar', data)
+      setServicios( prevServicios => prevServicios.filter(servicio => servicio.id !== data) )
+    })
+
+    socket.on('servicio-solicitud-aceptada', (data) => {
+      console.log('servicio-solicitud-aceptada', data)
+      toast.success(`El cliente: ${data.servicio.nombreCliente} ${data.servicio.apellidoCliente} ha aceptado tu solicitud! 🔥✅`)
+
+      //TODO: EMPEZAR EL VIAJE tanto para CLIENTE COMO CONDUCTOR y LO OTRO
+    })
+
+    socket.on('servicio-solicitud-rechazada', (data) => {
+      console.log('servicio-solicitud-rechazada', data)
+      toast.error(`El cliente: ${data.servicio.nombreCliente} ${data.servicio.apellidoCliente} ha rechazado tu solicitud! 😢❌`)
+
+      //TODO: VOLVER A ENVIAR SERVICIO A TODOS LOS CONDUCTORES DISPONIBLES Y ESPERAR
     })
 
     return () => {
@@ -142,6 +163,29 @@ const Conductor = () => {
 
   }
 
+  const tomarServicio = useCallback( async ( servicio, id ) => {
+
+    if(socket) {
+      socket.emit('servicio-tomado', id)
+      const resp = await axios.get(`http://localhost:3000/conductor/mongo/${user.idMongoDB}`)
+
+      const conductor = resp.data;
+
+      //TODO: OBTENER PROMEDIO CALIFICACIONES DEL CONDUCTOR
+
+      socket.emit('servicio-solicitud-a-cliente', {
+        conductor,
+        servicio,
+        cliente: servicio.cliente,
+      })
+
+
+    } else {
+      console.log('no hay socket')
+    }
+
+  }, [socket]);
+
   const handleChange = (e) => {
     // console.log(e.target.value)
   }
@@ -188,10 +232,10 @@ const Conductor = () => {
                             <div class="alert alert-primary row" role="alert" key={index} >
                               <div className="col col-8">
                               <p className='fw-bold'>{servicio.nombreCliente} {servicio.apellidoCliente} de  {servicio.barrioOrigen} hasta {servicio.barrioDestino}</p>
-                              <p><strong>Precio:</strong> ${servicio.precio} - {servicio.distancia} kms</p>
+                              <p><strong>Distancia:</strong>{servicio.distancia} kms</p>
                               </div>
                               <div className="col col-4">
-                              <button className='btn btn-primary'>Tomar</button>
+                              <button className='btn btn-primary' onClick={() => tomarServicio(servicio, servicio.id)}>Tomar</button>
                               </div>
                             </div>
                           ))

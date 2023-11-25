@@ -68,15 +68,17 @@ const Cliente = () => {
     conductoresCercanos,
     cliente: usuarioData,
     recorrido: recorridoSolicitado,
-    precio: precioRecorridoSolicitado
    })
     
   }
 
   const sendMessage = useCallback(( data ) => {
 
+    //create a random id for the message
+    const id = Math.floor(Math.random() * 1000000000);
+
     if(socket) {
-      socket.emit('alertar-conductores', data)
+      socket.emit('alertar-conductores', {...data, id})
     } else {
       console.log('no hay socket')
     }
@@ -102,6 +104,36 @@ const Cliente = () => {
 
     socket.on('message', (data) => {
       console.log("MSG", data)
+    })
+
+
+    socket.on('servicio-solicitud-de-conductor', (data) => {
+      console.log('servicio-solicitud-de-conductor', data)
+      toast.success(`El conductor: ${data.conductor.primerNombre} ${data.conductor.primerApellido} quiere tomar tu servicio!`)
+      
+      toast((t) => (
+        <span>
+          El conductor: <strong>{data.conductor.primerNombre} {data.conductor.primerApellido}</strong> quiere tomar tu servicio! - calificación: 4.8
+          <button onClick={() => {
+            toast.dismiss(t.id)
+            socket.emit('servicio-solicitud-cliente-rechazada', {
+              conductor: data.conductor,
+              servicio: data.servicio
+            })
+          }} className='btn btn-warning m-2'>
+            Reachazar
+          </button>
+          <button onClick={() => {
+            toast.dismiss(t.id)
+            socket.emit('servicio-solicitud-cliente-aceptada', {
+              conductor: data.conductor,
+              servicio: data.servicio              
+            })
+          }} className='btn btn-primary m-2'>
+            Aceptar
+          </button>
+        </span>
+      ))
     })
 
     return () => {
@@ -144,7 +176,7 @@ const Cliente = () => {
               <option selected>Selecciona el recorrido</option>
               {
                 recorridos.map(r => (
-                  <option value={r.recorrido.idRecorrido} key={r.recorrido.idRecorrido}>{r.barrioOrigen.nombreBarrio} - {r.barrioDestino.nombreBarrio} - {r.recorrido.DistanciaKM} Kms</option>
+                  <option value={r.recorrido.idRecorrido} key={r.recorrido.idRecorrido}>{r.barrioOrigen.nombreBarrio} - {r.barrioDestino.nombreBarrio}</option>
                 ))
               }
             </select>
