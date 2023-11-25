@@ -16,6 +16,7 @@ const Conductor = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [socket, setSocket] = useState(null);
   const [servicios, setServicios] = useState([])
+  const [viajeActivo, setViajeActivo] = useState(null)
 
   console.log(servicios)
 
@@ -49,6 +50,7 @@ const Conductor = () => {
       const barrioOrigen = data.recorrido.barrioOrigen.nombreBarrio
       const barrioDestino = data.recorrido.barrioDestino.nombreBarrio
       const precio = data.precio
+      const recorrido = data.recorrido
 
       const texto = `El cliente ${nombreCliente} ${apellidoCliente} ha solicitado un servicio desde ${barrioOrigen} hasta ${barrioDestino} por un valor de ${precio}`
       
@@ -60,6 +62,7 @@ const Conductor = () => {
         barrioOrigen,
         barrioDestino,
         precio,
+        recorrido,
         distancia: data.recorrido.recorrido.DistanciaKM
       }] )
 
@@ -83,13 +86,17 @@ const Conductor = () => {
       toast.success(`El cliente: ${data.servicio.nombreCliente} ${data.servicio.apellidoCliente} ha aceptado tu solicitud! 🔥✅`)
 
       //TODO: EMPEZAR EL VIAJE tanto para CLIENTE COMO CONDUCTOR y LO OTRO
+      setServicios([])
+      console.log(data)
+      setViajeActivo(data)
+
     })
 
     socket.on('servicio-solicitud-rechazada', (data) => {
       console.log('servicio-solicitud-rechazada', data)
       toast.error(`El cliente: ${data.servicio.nombreCliente} ${data.servicio.apellidoCliente} ha rechazado tu solicitud! 😢❌`)
 
-      //TODO: VOLVER A ENVIAR SERVICIO A TODOS LOS CONDUCTORES DISPONIBLES Y ESPERAR
+      setServicios([])
     })
 
     return () => {
@@ -190,14 +197,21 @@ const Conductor = () => {
     // console.log(e.target.value)
   }
 
+  const llegoOrigen = async () => {
+    socket.emit('llego-origen', {
+      idCliente: viajeActivo.servicio.idCliente,
+      conductor: viajeActivo.conductor,
+    })
+  }
+
   return (
     <div>
         <p className='text-secondary'>Es hora de hacer viajes.</p>
         <div className="row">
-          <div className="col"></div>
-          <div className="col">
+          <div className="col-2"></div>
+          <div className="col-8">
            {
-            !esperandoServicios && <>
+            !esperandoServicios && !viajeActivo && <>
               <h1 className='text-white text-center fw-bold'>¿En dónde te encuentras?</h1>
                <form onSubmit={handleSubmit}>
                 <div className="mb-3">
@@ -221,7 +235,7 @@ const Conductor = () => {
             </>
            }
            {
-            esperandoServicios && <>
+            esperandoServicios && !viajeActivo && <>
               {
                 
                 servicios.length > 0 ? <> 
@@ -232,7 +246,7 @@ const Conductor = () => {
                             <div class="alert alert-primary row" role="alert" key={index} >
                               <div className="col col-8">
                               <p className='fw-bold'>{servicio.nombreCliente} {servicio.apellidoCliente} de  {servicio.barrioOrigen} hasta {servicio.barrioDestino}</p>
-                              <p><strong>Distancia:</strong>{servicio.distancia} kms</p>
+                              <p><strong>Distancia: </strong>{servicio.distancia} kms</p>
                               </div>
                               <div className="col col-4">
                               <button className='btn btn-primary' onClick={() => tomarServicio(servicio, servicio.id)}>Tomar</button>
@@ -255,8 +269,29 @@ const Conductor = () => {
               }}>Cancelar</button>
             </>
            }
+
+           {
+            viajeActivo && <>
+
+              <h2 className="text-warning text-center">Estás en viaje</h2>
+
+              <div className="card p-3" style={{margin: '0 auto'}}>
+                {/* {
+                  JSON.stringify(viajeActivo)
+                } */}
+                <h3>Pasajero: {viajeActivo.servicio.nombreCliente} {viajeActivo.servicio.apellidoCliente}</h3>
+                <h3>{viajeActivo.servicio.barrioOrigen} - {viajeActivo.servicio.barrioDestino}</h3>
+                <h4>{viajeActivo.servicio.distancia} kms</h4>
+                <p>Estado: <strong>{viajeActivo.viaje.estadoViaje}</strong></p>
+                <p>Id del viaje: <strong>{viajeActivo.viaje.idViaje}</strong></p>
+                <p>Conductor: <strong>{viajeActivo.conductor.primerNombre} {viajeActivo.conductor.primerApellido}</strong></p>
+                <button className="btn btn-primary" onClick={llegoOrigen}>Llegué al destino</button>
+              </div>
+            
+            </>
+           }
         </div>
-          <div className="col"></div>
+          <div className="col-2"></div>
           </div>
     </div>
   )

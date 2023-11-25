@@ -14,11 +14,14 @@ const Cliente = () => {
   const[precioRecorridoSolicitado, setPrecioRecorridoSolicitado] = useState(0)
   const [socket, setSocket] = useState(null);
   const { user } = useGlobalState()
-
+  const [recorrido, setRecorrido] = useState(null)
+  const [viajeActivo, setViajeActivo] = useState(null)
 
   const handleSolicitar = async (e) => {
     e.preventDefault()
     const idRecorrido = e.target[0].value
+    if(!idRecorrido) return toast.error('Debes seleccionar un recorrido')
+    setRecorridoSolicitado(idRecorrido)
 
     const respCosto = await axios.get(`http://localhost:3000/precio-recorrido/${idRecorrido}`)
     
@@ -42,10 +45,10 @@ const Cliente = () => {
   }
 
   const pedirServicio = async (idRecorrido) => {
+    console.log('pedir servicio', idRecorrido)
     const { data } = await axios.get(`http://localhost:3000/recorrido/${idRecorrido}`)
     const barrioOrigenId = data.barrioOrigenId
     const barrioDestinoId = data.barrioDestinoId
-    console.log(data)
 
     const recorridos = localStorage.getItem('recorridos')
     const recorridosParse = JSON.parse(recorridos)
@@ -120,20 +123,49 @@ const Cliente = () => {
               conductor: data.conductor,
               servicio: data.servicio
             })
+            toast('Vuelve a solicitar un servicio')
           }} className='btn btn-warning m-2'>
-            Reachazar
+            Rechazar
           </button>
-          <button onClick={() => {
+          <button onClick={ async () => {
             toast.dismiss(t.id)
+            console.log("la data para el viaje es: ", data)
+            console.log("_-------_")
+            const cliente = await axios.get(`http://localhost:3000/cliente/mongo/${user.idMongoDB}`)
+            const clienteData = cliente.data
+            const resp =  await axios.post('http://localhost:3000/viaje', {
+              estadoViaje: 'EN CURSO',
+              fechahoraInicio: new Date(),
+              fechahoraFin: '',
+              conductorId: data.conductor.idConductor,
+              clienteId: Number(clienteData.idCliente),
+              recorridoId: data.servicio.recorrido.recorrido.idRecorrido
+            })
+            
+            const viaje = resp.data
+
+            setViajeActivo({
+              ...viaje,
+              conductor: data.conductor,
+              servicio: data.servicio
+            })
+            
             socket.emit('servicio-solicitud-cliente-aceptada', {
               conductor: data.conductor,
-              servicio: data.servicio              
+              servicio: data.servicio,
+              viaje       
             })
+
           }} className='btn btn-primary m-2'>
             Aceptar
           </button>
         </span>
       ))
+    })
+
+    socket.on('llego-origen-conductor', (data) => {
+      console.log('llego-origen-conductor', data)
+      toast.success(`El conductor: ${data.conductor.primerNombre} ${data.conductor.primerApellido} llegó a tu ubicación!`)
     })
 
     return () => {
@@ -160,14 +192,60 @@ const Cliente = () => {
 
   }, [])
 
+  const handlePanicButton = async () => {
+    toast((t) => (
+      <span>
+        ¿Sientes que estás en posible peligro?
+        <button onClick={() => {
+          toast.dismiss(t.id)
+         
+        }} className='btn btn-success m-2'>
+          NO
+        </button>
+        <button onClick={ async () => {
+          toast.dismiss(t.id)
+          
+          toast('Manten la calma y espera a que llegue la ayuda - Equipo de UrbanNav')
+          
+          const cliente = await axios.get(`http://localhost:3000/cliente/mongo/${user.idMongoDB}`)
+          const clienteData = cliente.data
+          
+          console.log(clienteData)
+          const correoPanico = clienteData.correoPanico
+          toast.success(`Alerta enviada a tu correo de pánico: ${correoPanico }`)
+
+          const resp =  await axios.post('http://localhost:3000/generar-alerta', {
+            fechahora: new Date(),
+            viajeId: viajeActivo.idViaje
+          })
+
+          console.log(resp)
+
+          //TODO: CAMBIAR EL ESTADO DEL VIAJE A CANCELADO
+          //TODO: JUSTIFICAR EL VIAJE CANCELADO
+
+          //TODO: TERMINAR EL VIAJE
+
+
+        }} className='btn btn-danger m-2'>
+          SI, ALERTAR
+        </button>
+      </span>
+    ))
+  }
+
   return (
     <div>
-        <p className='text-secondary'>Es hora de pedir viajes.</p>
+        {
+          !viajeActivo && <>
+            <p className='text-secondary'>Es hora de pedir viajes.</p>
+            <h1 className='text-white text-center fw-bold'>Solicita tu servicio</h1>
+          </>
+        }
 
-        <h1 className='text-white text-center fw-bold'>Solicita tu servicio</h1>
         <div className="container">
           {
-            !conductor ? <>
+            !conductor && !viajeActivo ? <>
               <form className="w-50" style={{margin: '0 auto'}} onSubmit={handleSolicitar}>
               <label htmlFor="" className="text-white mb-2">Selecciona el recorrido</label>
             {
@@ -183,28 +261,36 @@ const Cliente = () => {
             }
 
          {
-          !loading && <button type="submit" className='btn btn-primary mt-2'>Solicitar</button>
+          !loading && !viajeActivo && <button type="submit" className='btn btn-primary mt-2'>Solicitar</button>
          }
           </form>
             </>
             : <>
-              <h1 className='text-white text-center fw-bold'>Conductor asignado</h1>
-              <div className="card w-50" style={{margin: '0 auto'}}>
-                <div className="card-body">
-                  {/* <h5 className="card-title">Conductor: {conductor.primerNombre} {conductor.primerApellido}</h5> */}
-                </div>
-              <div className="d-grid gap-2 col-12">
-                <div className="col d-flex justify-content-center">
-                {/* <button className="btn btn-primary" onClick={aceptarConductor}>Aceptar servicio</button> */}
-                </div>
-                <div className="col d-flex justify-content-center">
-                {/* <button className="btn btn-warning" onClick={rechazarConductor}>Quiero otro conductor</button> */}
-
-                </div>
-              </div>
-              </div>
+             
             </>
           }
+
+          {
+            viajeActivo && <>
+
+              <h2 className="text-warning text-center">Estás en viaje</h2>
+
+              <div className="card p-3" style={{margin: '0 auto'}}>
+                {/* {
+                  JSON.stringify(viajeActivo)
+                } */}
+                <h3>Pasajero: {viajeActivo.servicio.nombreCliente} {viajeActivo.servicio.apellidoCliente}</h3>
+                <h3>{viajeActivo.servicio.barrioOrigen} - {viajeActivo.servicio.barrioDestino}</h3>
+                <h4>{viajeActivo.servicio.distancia} kms</h4>
+                <p>Estado: <strong>{viajeActivo.estadoViaje}</strong></p>
+                <p>Id del viaje: <strong>{viajeActivo.idViaje}</strong></p>
+                <p>Conductor: <strong>{viajeActivo.conductor.primerNombre} {viajeActivo.conductor.primerApellido}</strong></p>
+                <button className="btn btn-danger" onClick={handlePanicButton}>Botón de pánico</button>
+              </div>
+            
+            </>
+           }
+
         </div>
 
        
