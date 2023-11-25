@@ -52,13 +52,14 @@ const Conductor = () => {
 
       const texto = `El cliente ${nombreCliente} ${apellidoCliente} ha solicitado un servicio desde ${barrioOrigen} hasta ${barrioDestino} por un valor de ${precio}`
       
-      setServicios([...servicios, {
+      setServicios( prevServicios => [...prevServicios, {
         nombreCliente,
         apellidoCliente,
         barrioOrigen,
         barrioDestino,
-        precio
-      }])
+        precio,
+        distancia: data.recorrido.recorrido.DistanciaKM
+      }] )
 
       toast('Tienes un nuevo servicio disponible, apurate! 🔥', {
         icon: '🚀',
@@ -177,20 +178,33 @@ const Conductor = () => {
            }
            {
             esperandoServicios && <>
-              <h1 className='text-white text-center fw-bold'>Servicios disponibles</h1>
               {
-                servicios.length > 0 ? servicios.map(servicio => (
-                  <div class="alert alert-primary" role="alert">
-                    <h4>{servicio.nombreCliente} {servicio.apellidoCliente}</h4>
-                    <hr />
-                    <p><strong>Desde:</strong> {servicio.barrioOrigen}</p>
-                    <p><strong>Hasta:</strong> {servicio.barrioDestino}</p>
-                    <p><strong>Precio:</strong> {servicio.precio}</p>
-                    <button className='btn btn-primary'>Aceptar servicio</button>
-                  </div>
-                )) : <p className='text-white'>No hay servicios disponibles</p>
+                
+                servicios.length > 0 ? <> 
+                      <h3 className='text-white text-center fw-bold'>Servicios disponibles</h3>
+                      <div style={{ height: '300px', overflowY: 'scroll', overflowX: 'hidden' }} className="px-4">
+                        {
+                          servicios.map((servicio, index) => (
+                            <div class="alert alert-primary row" role="alert" key={index} >
+                              <div className="col col-8">
+                              <p className='fw-bold'>{servicio.nombreCliente} {servicio.apellidoCliente} de  {servicio.barrioOrigen} hasta {servicio.barrioDestino}</p>
+                              <p><strong>Precio:</strong> ${servicio.precio} - {servicio.distancia} kms</p>
+                              </div>
+                              <div className="col col-4">
+                              <button className='btn btn-primary'>Tomar</button>
+                              </div>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    </>
+                 : <div className="container d-flex justify-content-center">
+                  <div class="spinner-border text-info" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+                </div>
               }
-              <h3 className='text-white text-center fw-bold'>Esperando servicios...</h3>
+              <h4 className='text-white text-center fw-bold mt-2'>Esperando servicios... 😊</h4>
               <button className='btn btn-danger mt-2' onClick={() => {
                 cerrarSocket()
                 setEsperandoServicios(false)

@@ -58,6 +58,7 @@ const Cliente = () => {
     })
     
     const conductoresCercanos = resp2.data
+    if(resp2.data.length === 0) return toast.error('No hay conductores cercanos, intenta en unos minutos 🫠')
     toast.success(`Conductores cercanos: ${resp2.data.length}. Les avisamos que deseas un servicio!`)
     
     const usuario = await axios.get(`http://localhost:3001/usuario/${user.idMongoDB}`)
