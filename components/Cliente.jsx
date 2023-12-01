@@ -4,6 +4,7 @@ import axios from 'axios'
 import React, { useCallback, useEffect, useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { io } from 'socket.io-client'
+import Swal from 'sweetalert2'
 
 const Cliente = () => {
 
@@ -20,6 +21,11 @@ const Cliente = () => {
   const handleSolicitar = async (e) => {
     e.preventDefault()
     const idRecorrido = e.target[0].value
+
+    console.log("id recorrido", idRecorrido)
+
+    if(idRecorrido === 'Selecciona el recorrido') return toast.error('Debes seleccionar un recorrido')
+
     if(!idRecorrido) return toast.error('Debes seleccionar un recorrido')
     setRecorridoSolicitado(idRecorrido)
 
@@ -34,7 +40,7 @@ const Cliente = () => {
         <button onClick={() => {
           toast.dismiss(t.id)
           setPrecioRecorridoSolicitado(respCosto.data.precio)
-          pedirServicio(idRecorrido)
+          pedirServicio(Number(idRecorrido))
           
         }} className='btn btn-primary m-2'>
           Aceptar
@@ -50,9 +56,9 @@ const Cliente = () => {
     const barrioOrigenId = data.barrioOrigenId
     const barrioDestinoId = data.barrioDestinoId
 
-    const recorridos = localStorage.getItem('recorridos')
-    const recorridosParse = JSON.parse(recorridos)
-    const recorridoSolicitado = recorridosParse.find(r => r.recorrido.idRecorrido === Number(idRecorrido))
+    const recorridos = await axios.get('http://localhost:3000/recorrido?filter={"include":[{"relation":"barrioOrigen"},{"relation":"barrioDestino"}]}')
+    console.log(recorridos.data)
+    const recorridoSolicitado = recorridos.data.find(r => r.idRecorrido === idRecorrido)
 
     const resp2 = await axios.post('http://localhost:3000/recorrido/solicitar/conductores-cercanos', {
       barrioOrigenId,
@@ -139,7 +145,7 @@ const Cliente = () => {
               fechahoraFin: '',
               conductorId: data.conductor.idConductor,
               clienteId: Number(clienteData.idCliente),
-              recorridoId: data.servicio.recorrido.recorrido.idRecorrido
+              recorridoId: data.servicio.recorrido.idRecorrido
             })
             
             const viaje = resp.data
@@ -180,15 +186,14 @@ const Cliente = () => {
   useEffect(() => {
     const getRecorridos = async () => {
       setLoading(true)
-      const res = await axios.get('http://localhost:3000/recorrido')
-      console.log(res)
+      const res = await axios.get('http://localhost:3000/recorrido?filter={"include":[{"relation":"barrioOrigen"},{"relation":"barrioDestino"}]}')
+      console.log(res.data)
       setRecorridos(res.data)
-      localStorage.setItem('recorridos', JSON.stringify(res.data))
       setLoading(false)
+      // localStorage.setItem('recorridos', JSON.stringify(res.data))
     }
 
-    if(localStorage.getItem('recorridos')) setRecorridos(JSON.parse(localStorage.getItem('recorridos')))
-    else getRecorridos()
+    getRecorridos()
 
   }, [])
 
@@ -222,9 +227,55 @@ const Cliente = () => {
           console.log(resp)
 
           //TODO: CAMBIAR EL ESTADO DEL VIAJE A CANCELADO
+          const resp2 = await axios.patch(`http://localhost:3000/viaje/${viajeActivo.idViaje}`, {
+            estadoViaje: 'CANCELADO'
+          })
+          if(resp.data) {
+            toast(`Tu viaje ha sido cancelado por seguridad`)
+          }
           //TODO: JUSTIFICAR EL VIAJE CANCELADO
+          const { value: formValues } = await Swal.fire({
+            title: "Justificación de cancelación",
+            html: `
+              <h2 class="text-center">Motivo de cancelación</h2>
+              <input id="swal-input1" class="swal2-input" placeholder="Escribe el motivo">
+            `,
+            focusConfirm: false,
+            preConfirm: () => {
+              return [
+                document.getElementById("swal-input1").value
+              ];
+            },
+            confirmButtonText: "Enviar",
+            denyButtonText: "Cancelar",
+            showDenyButton: true,
+          });
+          if (formValues) {
+            const justificacion = formValues[0];
+            console.log(justificacion)
+            const resp3 = await axios.post('http://localhost:3000/resena-viaje-cliente', {
+                comentario: justificacion,
+                viajeId: viajeActivo.idViaje
+            })
+            console.log(resp3.data)
+            if(resp3.data) {
+              toast('Tu justificación ha sido enviada')
+            }
+          }
 
           //TODO: TERMINAR EL VIAJE
+          const resp4 = await axios.patch(`http://localhost:3000/viaje/${viajeActivo.idViaje}`, {
+            estadoViaje: 'FINALIZADO',
+            fechahoraFin: new Date()
+          })
+        
+          toast('Tu viaje ha sido finalizado')
+          setViajeActivo(null)
+
+          socket.emit('viaje-cancelado', {
+            viajeId: viajeActivo.idViaje,
+            conductorId: viajeActivo.conductor.idMongoDB
+          })
 
 
         }} className='btn btn-danger m-2'>
@@ -253,8 +304,8 @@ const Cliente = () => {
               : <select className="form-select" aria-label="Default select example">
               <option selected>Selecciona el recorrido</option>
               {
-                recorridos.map(r => (
-                  <option value={r.recorrido.idRecorrido} key={r.recorrido.idRecorrido}>{r.barrioOrigen.nombreBarrio} - {r.barrioDestino.nombreBarrio}</option>
+                recorridos.length > 0 && recorridos.map(r => (
+                  <option value={r.idRecorrido} key={r.idRecorrido}>{r.barrioOrigen.nombreBarrio} - {r.barrioDestino.nombreBarrio}</option>
                 ))
               }
             </select>

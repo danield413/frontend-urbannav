@@ -23,16 +23,17 @@ const Conductor = () => {
   useEffect(() => {
     const getBarrios = async () => {
       setLoading(true)
-      const resp = await fetch('http://localhost:3000/barrio')
+      const resp = await fetch('http://localhost:3000/barrio?filter={"include":[{"relation":"ciudad"}]}')
       const data = await resp.json()
+      console.log(data)
       setBarrios(data)
       setLoading(false)
       localStorage.setItem('barrios', JSON.stringify(data))
     }
-
-    if(localStorage.getItem('barrios')) setBarrios(JSON.parse(localStorage.getItem('barrios')))
-    else getBarrios()
     getBarrios()
+
+    // if(localStorage.getItem('barrios')) setBarrios(JSON.parse(localStorage.getItem('barrios')))
+    // else getBarrios()
   }, [])
 
   useEffect(() => {
@@ -63,7 +64,7 @@ const Conductor = () => {
         barrioDestino,
         precio,
         recorrido,
-        distancia: data.recorrido.recorrido.DistanciaKM
+        distancia: data.recorrido.DistanciaKM
       }] )
 
       toast('Tienes un nuevo servicio disponible, apurate! 🔥', {
@@ -99,6 +100,17 @@ const Conductor = () => {
       setServicios([])
     })
 
+    socket.on('viaje-cancelado-cliente', (data) => {
+      console.log('viaje-cancelado-cliente', data)
+      // toast.error(`El cliente: ${data.servicio.nombreCliente} ${data.servicio.apellidoCliente} ha cancelado el viaje! 😢❌`)
+      toast.error(`El cliente ha cancelado el viaje! 😢❌`)
+
+      setServicios([])
+      setViajeActivo(null)
+      setEsperandoServicios(false)
+      setBarrios([])
+    })
+
     return () => {
       socket.off('connect')
       socket.off('message')
@@ -132,7 +144,7 @@ const Conductor = () => {
             tipoUsuario: 'CONDUCTOR'
         },
     }))
-    if(socket) { 
+    
       setIsConnected(true)
       const resp = await axios.get(`http://localhost:3000/conductor/mongo/${user.idMongoDB}`)
 
@@ -143,7 +155,6 @@ const Conductor = () => {
       })
   
       if(resp2.status === 204) toast('Ahora estás disponible para recibir servicios')
-    }
   }
 
   const handleSubmit = async (e) => {
@@ -174,6 +185,9 @@ const Conductor = () => {
 
     if(socket) {
       socket.emit('servicio-tomado', id)
+
+      toast('Has tomado el servicio, le hemos avisado al usuario, espera su respuesta... ⌚')
+
       const resp = await axios.get(`http://localhost:3000/conductor/mongo/${user.idMongoDB}`)
 
       const conductor = resp.data;
@@ -195,6 +209,55 @@ const Conductor = () => {
 
   const handleChange = (e) => {
     // console.log(e.target.value)
+  }
+
+  const terminarViaje = async () => {
+    socket.emit('terminar-viaje', {
+      idCliente: viajeActivo.servicio.idCliente,
+      conductor: viajeActivo.conductor,
+    })
+
+    // TODO: TERMINAR VIAJE EN LA BASE DE DATOS
+    const resp = await axios.patch(`http://localhost:3000/viaje/${viajeActivo.viaje.idViaje}`, {
+      estadoViaje: 'FINALIZADO-NORMAL'
+    })
+
+    toast.success('Viaje finalizado con éxito! ✅')
+
+    //TODO: CALIFICAR AL CLIENTE
+    
+    // const { value: formValues } = await Swal.fire({
+    //   title: "Justificación de cancelación",
+    //   html: `
+    //     <h2 class="text-center">Motivo de cancelación</h2>
+    //     <input id="swal-input1" class="swal2-input" placeholder="Escribe el motivo">
+    //   `,
+    //   focusConfirm: false,
+    //   preConfirm: () => {
+    //     return [
+    //       document.getElementById("swal-input1").value
+    //     ];
+    //   },
+    //   confirmButtonText: "Enviar",
+    //   denyButtonText: "Cancelar",
+    //   showDenyButton: true,
+    // });
+    // if (formValues) {
+    //   const justificacion = formValues[0];
+    //   console.log(justificacion)
+    //   const resp3 = await axios.post('http://localhost:3000/resena-viaje-cliente', {
+    //       comentario: justificacion,
+    //       viajeId: viajeActivo.idViaje
+    //   })
+    //   console.log(resp3.data)
+    //   if(resp3.data) {
+    //     toast('Tu justificación ha sido enviada')
+    //   }
+    // }
+
+    // TODO: NOTIFICAR AL CLIENTE PARA QUE CALIFIQUE AL CONDUCTOR
+
+    // TODO: ENVIAR FACTURA
   }
 
   const llegoOrigen = async () => {
@@ -220,7 +283,7 @@ const Conductor = () => {
                     <option selected>Selecciona tu barrio</option>
                       {
                         barrios.length > 0 && barrios.map(barrio => (
-                          <option key={barrio.barrioId} value={barrio.barrioId}>{barrio.barrio} - {barrio.ciudad}</option>
+                          <option key={barrio.idBarrio} value={barrio.idBarrio}>{barrio.nombreBarrio} - {barrio.ciudad.Nombre}</option>
                         ))
                       }
                   </select>
@@ -286,8 +349,10 @@ const Conductor = () => {
                 <p>Id del viaje: <strong>{viajeActivo.viaje.idViaje}</strong></p>
                 <p>Conductor: <strong>{viajeActivo.conductor.primerNombre} {viajeActivo.conductor.primerApellido}</strong></p>
                 <button className="btn btn-primary" onClick={llegoOrigen}>Llegué al destino</button>
+
+                <button className="btn btn-danger mt-2" onClick={terminarViaje}>Finalizar viaje</button>
               </div>
-            
+                
             </>
            }
         </div>
