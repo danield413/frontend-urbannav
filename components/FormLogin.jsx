@@ -5,12 +5,21 @@ import { MD5 } from "crypto-js"
 import { useRouter } from "next/navigation"
 import { useState } from "react";
 import { Button, Col, Container, Form, Row } from "react-bootstrap";
+import ReCAPTCHA from "react-google-recaptcha";
 import toast, { Toaster } from "react-hot-toast"
 
 const FormLogin = () => {
 
   const { user, setUser } = useGlobalState()
   const router = useRouter()
+
+  const [captcha, setCaptcha] = useState(false)
+  console.log(captcha)
+
+  const onChange = (value) => {
+    setCaptcha(value)
+  }
+
 
   const [idUsuario, setIdUsuario] = useState(''); 
   const [codigo2FA, setCodigo2FA] = useState(false);
@@ -24,6 +33,10 @@ const FormLogin = () => {
     e.preventDefault();
     const correo = e.target[0].value;
     const password = e.target[1].value;
+    if (!captcha) {
+      toast.error('Debes verificar que no eres un robot 😅')
+      return
+    }
 
     const clave = cifrar(password);
 
@@ -101,6 +114,11 @@ const FormLogin = () => {
           <Form.Group className="mb-3" controlId="formBasicPassword">
             <Form.Label className="text-white">Contraseña <strong className="text-danger">*</strong></Form.Label>
             <Form.Control type="password" placeholder="Ingresa tu contraseña" />
+            <ReCAPTCHA
+              className="mt-3"
+              sitekey="6Le0hCcpAAAAAIp7n99Yj9CokJ6uAapkCcmAfWZk"
+              onChange={onChange}
+            />,
           </Form.Group>
 
           <Button variant="primary" type="submit">
