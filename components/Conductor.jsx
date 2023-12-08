@@ -3,6 +3,7 @@ import { useGlobalState } from '@/hooks/useGlobalState'
 // import { socket, socket } from '@/socket/socket'
 import axios from 'axios'
 import React, { useCallback, useEffect, useState } from 'react'
+import { Button, Form } from 'react-bootstrap'
 import toast from 'react-hot-toast'
 import { io } from 'socket.io-client'
 
@@ -17,6 +18,8 @@ const Conductor = () => {
   const [socket, setSocket] = useState(null);
   const [servicios, setServicios] = useState([])
   const [viajeActivo, setViajeActivo] = useState(null)
+  const [isRating, setIsRating] = useState(false)
+  const [rating, setRating] = useState(0)
 
   console.log(servicios)
 
@@ -86,7 +89,6 @@ const Conductor = () => {
       console.log('servicio-solicitud-aceptada', data)
       toast.success(`El cliente: ${data.servicio.nombreCliente} ${data.servicio.apellidoCliente} ha aceptado tu solicitud! 🔥✅`)
 
-      //TODO: EMPEZAR EL VIAJE tanto para CLIENTE COMO CONDUCTOR y LO OTRO
       setServicios([])
       console.log(data)
       setViajeActivo(data)
@@ -192,7 +194,10 @@ const Conductor = () => {
 
       const conductor = resp.data;
 
-      //TODO: OBTENER PROMEDIO CALIFICACIONES DEL CONDUCTOR
+      const response = await axios.get(`http://localhost:3000/promedio-conductor/${conductor.idConductor}`)
+
+      const promedio = response.data
+      console.log('PROMEDIO', promedio)
 
       socket.emit('servicio-solicitud-a-cliente', {
         conductor,
@@ -217,45 +222,18 @@ const Conductor = () => {
       conductor: viajeActivo.conductor,
     })
 
-    // TODO: TERMINAR VIAJE EN LA BASE DE DATOS
     const resp = await axios.patch(`http://localhost:3000/viaje/${viajeActivo.viaje.idViaje}`, {
       estadoViaje: 'FINALIZADO-NORMAL'
     })
 
     toast.success('Viaje finalizado con éxito! ✅')
 
-    //TODO: CALIFICAR AL CLIENTE
-    
-    // const { value: formValues } = await Swal.fire({
-    //   title: "Justificación de cancelación",
-    //   html: `
-    //     <h2 class="text-center">Motivo de cancelación</h2>
-    //     <input id="swal-input1" class="swal2-input" placeholder="Escribe el motivo">
-    //   `,
-    //   focusConfirm: false,
-    //   preConfirm: () => {
-    //     return [
-    //       document.getElementById("swal-input1").value
-    //     ];
-    //   },
-    //   confirmButtonText: "Enviar",
-    //   denyButtonText: "Cancelar",
-    //   showDenyButton: true,
-    // });
-    // if (formValues) {
-    //   const justificacion = formValues[0];
-    //   console.log(justificacion)
-    //   const resp3 = await axios.post('http://localhost:3000/resena-viaje-cliente', {
-    //       comentario: justificacion,
-    //       viajeId: viajeActivo.idViaje
-    //   })
-    //   console.log(resp3.data)
-    //   if(resp3.data) {
-    //     toast('Tu justificación ha sido enviada')
-    //   }
-    // }
+    //emitirle al cliente para que califique al conductor
+    socket.emit('emision-puntuacion-conductor', {
+      idCliente: viajeActivo.servicio.idCliente,
+    })
 
-    // TODO: NOTIFICAR AL CLIENTE PARA QUE CALIFIQUE AL CONDUCTOR
+    setIsRating(true)
 
     // TODO: ENVIAR FACTURA
   }
@@ -267,16 +245,126 @@ const Conductor = () => {
     })
   }
 
+  const handleCalificarCliente = async (e) => {
+
+    e.preventDefault()
+
+    const comentario = e.target[0].value
+    console.log({
+      comentario,
+      puntuacion: rating,
+      viajeId:viajeActivo.viaje.idViaje
+    })
+
+    //* CREAR RESEÑA y CALIFICACION
+    const response = await axios.post('http://localhost:3000/resena-viaje-cliente', {
+      comentario,
+      viajeId:viajeActivo.viaje.idViaje
+    })
+
+    const idResena = response.data.idResena
+
+    const response2 = await axios.post('http://localhost:3000/puntuacion-cliente', {
+      resenaViajeClienteId: idResena,
+      puntuacion: rating,
+    })
+
+    console.log(response2)
+
+    if(response2.status === 200) {
+      toast.success('Calificación enviada con éxito! ✅')
+      setIsRating(false)
+      setViajeActivo(null)
+      setEsperandoServicios(false)
+      setBarrios([])
+    }
+
+    
+
+  }
+
   return (
-    <div>
+    <div className='animate__animated animate__fadeIn'>
         <p className='text-secondary'>Es hora de hacer viajes.</p>
         <div className="row">
           <div className="col-2"></div>
           <div className="col-8">
+
+            {
+              (isRating) && (
+                <>
+                  <h1 className='text-warning text-center fw-bold'>Califica al cliente</h1>
+                  <Form onSubmit={handleCalificarCliente} className='animate__animated animate__fadeIn'>
+                    <Form.Group className="mb-3" controlId="formBasicEmail">
+                      <Form.Control
+                        type="text"
+                        placeholder="Comentario"
+                      />
+
+                      <Form.Check
+                        type="radio"
+                        label="1 estrella"
+                        name="rating"
+                        id="rating1"
+                        value={1}
+                        className='text-white fw-bold mt-2'
+                        onChange={(e) => setRating(1)}
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="2 estrellas"
+                        name="rating"
+                        id="rating2"
+                        value={2}
+                        className='text-white fw-bold'
+                        onChange={(e) => setRating(2)}
+
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="3 estrellas"
+                        name="rating"
+                        id="rating3"
+                        value={3}
+                        className='text-white fw-bold'
+                        onChange={(e) => setRating(3)}
+
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="4 estrellas"
+                        name="rating"
+                        id="rating4"
+                        value={4}
+                        className='text-white fw-bold'
+                        onChange={(e) => setRating(4)}
+
+                      />
+                      <Form.Check
+                        type="radio"
+                        label="5 estrellas"
+                        name="rating"
+                        id="rating5"
+                        value={5}
+                        className='text-white fw-bold'
+                        onChange={(e) => setRating(5)}
+                      />
+
+
+                    </Form.Group>
+
+                    <Button variant="primary" type="submit">
+                      Calificar
+                    </Button>
+                  </Form>
+                </>
+              )
+            }
+
            {
-            !esperandoServicios && !viajeActivo && <>
+            !esperandoServicios && !viajeActivo && !isRating && <>
               <h1 className='text-white text-center fw-bold'>¿En dónde te encuentras?</h1>
-               <form onSubmit={handleSubmit}>
+               <form onSubmit={handleSubmit} className='animate__animated animate__fadeIn'>
                 <div className="mb-3">
                   <label htmlFor="barrioOrigen" className="form-label text-white">Barrio</label>
                   <select className="form-select" aria-label="Default select example" id='barrioOrigen' onChange={handleChange}>
@@ -298,12 +386,12 @@ const Conductor = () => {
             </>
            }
            {
-            esperandoServicios && !viajeActivo && <>
+            esperandoServicios && !viajeActivo && !isRating && <>
               {
                 
                 servicios.length > 0 ? <> 
                       <h3 className='text-white text-center fw-bold'>Servicios disponibles</h3>
-                      <div style={{ height: '300px', overflowY: 'scroll', overflowX: 'hidden' }} className="px-4">
+                      <div style={{ height: '300px', overflowY: 'scroll', overflowX: 'hidden' }} className="px-4 animate__animated animate__fadeIn">
                         {
                           servicios.map((servicio, index) => (
                             <div class="alert alert-primary row" role="alert" key={index} >
@@ -334,11 +422,11 @@ const Conductor = () => {
            }
 
            {
-            viajeActivo && <>
+            viajeActivo && !isRating && <>
 
               <h2 className="text-warning text-center">Estás en viaje</h2>
 
-              <div className="card p-3" style={{margin: '0 auto'}}>
+              <div className="card p-3 animate__animated animate__fadeIn" style={{margin: '0 auto'}}>
                 {/* {
                   JSON.stringify(viajeActivo)
                 } */}

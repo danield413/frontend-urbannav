@@ -2,6 +2,7 @@
 import { useGlobalState } from '@/hooks/useGlobalState'
 import axios from 'axios'
 import React, { useCallback, useEffect, useState } from 'react'
+import { Button, Form } from 'react-bootstrap'
 import toast, { Toaster } from 'react-hot-toast'
 import { io } from 'socket.io-client'
 import Swal from 'sweetalert2'
@@ -17,6 +18,8 @@ const Cliente = () => {
   const { user } = useGlobalState()
   const [recorrido, setRecorrido] = useState(null)
   const [viajeActivo, setViajeActivo] = useState(null)
+  const [isRating, setIsRating] = useState(false)
+  const [rating, setRating] = useState(0)
 
   const handleSolicitar = async (e) => {
     e.preventDefault()
@@ -115,10 +118,15 @@ const Cliente = () => {
       console.log("MSG", data)
     })
 
+    socket.on('puntuar-conductor', (data) => {
+      console.log('PUNTUAR CONDUCTOR')
+      setIsRating(true)
+    })
 
     socket.on('servicio-solicitud-de-conductor', (data) => {
       console.log('servicio-solicitud-de-conductor', data)
       toast.success(`El conductor: ${data.conductor.primerNombre} ${data.conductor.primerApellido} quiere tomar tu servicio!`)
+      
       
       toast((t) => (
         <span>
@@ -226,14 +234,12 @@ const Cliente = () => {
 
           console.log(resp)
 
-          //TODO: CAMBIAR EL ESTADO DEL VIAJE A CANCELADO
           const resp2 = await axios.patch(`http://localhost:3000/viaje/${viajeActivo.idViaje}`, {
             estadoViaje: 'CANCELADO'
           })
           if(resp.data) {
             toast(`Tu viaje ha sido cancelado por seguridad`)
           }
-          //TODO: JUSTIFICAR EL VIAJE CANCELADO
           const { value: formValues } = await Swal.fire({
             title: "Justificación de cancelación",
             html: `
@@ -263,7 +269,6 @@ const Cliente = () => {
             }
           }
 
-          //TODO: TERMINAR EL VIAJE
           const resp4 = await axios.patch(`http://localhost:3000/viaje/${viajeActivo.idViaje}`, {
             estadoViaje: 'FINALIZADO',
             fechahoraFin: new Date()
@@ -285,10 +290,119 @@ const Cliente = () => {
     ))
   }
 
+  const handleCalificarConductor = async (e) => {
+
+    e.preventDefault()
+
+
+    const comentario = e.target[0].value
+    console.log({
+      comentario,
+      puntuacion: rating,
+      viajeId:viajeActivo.idViaje
+    })
+
+    //* CREAR RESEÑA y CALIFICACION
+    const response = await axios.post('http://localhost:3000/resena-viaje-conductor', {
+      comentario,
+      viajeId:viajeActivo.idViaje
+    })
+
+    const idResena = response.data.idResena
+
+    const response2 = await axios.post('http://localhost:3000/puntuacion-conductor', {
+      resenaViajeConductorId: idResena,
+      puntuacion: rating,
+    })
+
+    console.log(response2)
+
+    if(response2.status === 200) {
+      toast.success('Calificación enviada con éxito! ✅')
+      toast('Gracias por usar UrbanNav - Viaje finalizado')
+      setIsRating(false)
+      setViajeActivo(null)
+      setBarrios([])
+    }
+
+  }
+
   return (
-    <div>
+    <div className='animate__animated animate__fadeIn'>
+
+      {
+          (isRating) && (
+            <>
+              <h1 className='text-warning text-center fw-bold'>Califica al conductor</h1>
+              <Form onSubmit={handleCalificarConductor} className='animate__animated animate__fadeIn'>
+                <Form.Group className="mb-3" controlId="formBasicEmail">
+                  <Form.Control
+                    type="text"
+                    placeholder="Comentario"
+                  />
+
+                  <Form.Check
+                    type="radio"
+                    label="1 estrella"
+                    name="rating"
+                    id="rating1"
+                    value={1}
+                    className='text-white fw-bold mt-2'
+                    onChange={(e) => setRating(1)}
+                  />
+                  <Form.Check
+                    type="radio"
+                    label="2 estrellas"
+                    name="rating"
+                    id="rating2"
+                    value={2}
+                    className='text-white fw-bold'
+                    onChange={(e) => setRating(2)}
+
+                  />
+                  <Form.Check
+                    type="radio"
+                    label="3 estrellas"
+                    name="rating"
+                    id="rating3"
+                    value={3}
+                    className='text-white fw-bold'
+                    onChange={(e) => setRating(3)}
+
+                  />
+                  <Form.Check
+                    type="radio"
+                    label="4 estrellas"
+                    name="rating"
+                    id="rating4"
+                    value={4}
+                    className='text-white fw-bold'
+                    onChange={(e) => setRating(4)}
+
+                  />
+                  <Form.Check
+                    type="radio"
+                    label="5 estrellas"
+                    name="rating"
+                    id="rating5"
+                    value={5}
+                    className='text-white fw-bold'
+                    onChange={(e) => setRating(5)}
+                  />
+
+
+                </Form.Group>
+
+                <Button variant="primary" type="submit">
+                  Calificar
+                </Button>
+              </Form>
+            </>
+          )
+        }
+
         {
-          !viajeActivo && <>
+          !viajeActivo && !isRating && <>
             <p className='text-secondary'>Es hora de pedir viajes.</p>
             <h1 className='text-white text-center fw-bold'>Solicita tu servicio</h1>
           </>
@@ -296,11 +410,15 @@ const Cliente = () => {
 
         <div className="container">
           {
-            !conductor && !viajeActivo ? <>
-              <form className="w-50" style={{margin: '0 auto'}} onSubmit={handleSolicitar}>
+            !conductor && !viajeActivo && !isRating ? <>
+              <form className="w-50 animate__animated animate__fadeIn" style={{margin: '0 auto'}} onSubmit={handleSolicitar}>
               <label htmlFor="" className="text-white mb-2">Selecciona el recorrido</label>
             {
-              loading ? <p className='text-white'>Cargando...</p>
+              loading ? <div class="d-flex justify-content-center">
+                <div class="spinner-border text-warning" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
               : <select className="form-select" aria-label="Default select example">
               <option selected>Selecciona el recorrido</option>
               {
@@ -312,7 +430,7 @@ const Cliente = () => {
             }
 
          {
-          !loading && !viajeActivo && <button type="submit" className='btn btn-primary mt-2'>Solicitar</button>
+          !loading && !viajeActivo && !isRating && <button type="submit" className='btn btn-primary mt-2'>Solicitar</button>
          }
           </form>
             </>
@@ -322,11 +440,11 @@ const Cliente = () => {
           }
 
           {
-            viajeActivo && <>
+            viajeActivo && !isRating && <>
 
               <h2 className="text-warning text-center">Estás en viaje</h2>
 
-              <div className="card p-3" style={{margin: '0 auto'}}>
+              <div className="card p-3 animate__animated animate__fadeIn" style={{margin: '0 auto'}}>
                 {/* {
                   JSON.stringify(viajeActivo)
                 } */}

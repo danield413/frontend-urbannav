@@ -4,6 +4,7 @@ import NavTop from '@/components/NavTop'
 import MiContexto from '@/context/contextApp'
 import { Providers } from './providers'
 import { Toaster } from 'react-hot-toast'
+import 'animate.css';
 
 const inter = Inter({ subsets: ['latin'] })
 
