@@ -20,6 +20,8 @@ const Cliente = () => {
   const [viajeActivo, setViajeActivo] = useState(null)
   const [isRating, setIsRating] = useState(false)
   const [rating, setRating] = useState(0)
+  const [paying, setIsPaying] = useState(false)
+  const [metodosPago, setMetodosPago] = useState([])
 
   const handleSolicitar = async (e) => {
     e.preventDefault()
@@ -130,7 +132,7 @@ const Cliente = () => {
       
       toast((t) => (
         <span>
-          El conductor: <strong>{data.conductor.primerNombre} {data.conductor.primerApellido}</strong> quiere tomar tu servicio! - calificación: 4.8
+          El conductor: <strong>{data.conductor.primerNombre} {data.conductor.primerApellido}</strong> quiere tomar tu servicio! - calificación: {data.servicio.promedio.toFixed(1)} estrellas
           <button onClick={() => {
             toast.dismiss(t.id)
             socket.emit('servicio-solicitud-cliente-rechazada', {
@@ -157,6 +159,8 @@ const Cliente = () => {
             })
             
             const viaje = resp.data
+
+            //TODO: enviar correo y/o mensaje al pasajero con la confirmación del viaje y datos del conductor y vehículo 
 
             setViajeActivo({
               ...viaje,
@@ -320,18 +324,94 @@ const Cliente = () => {
     if(response2.status === 200) {
       toast.success('Calificación enviada con éxito! ✅')
       toast('Gracias por usar UrbanNav - Viaje finalizado')
+
+      const resp = await axios.get('http://localhost:3000/metodo-pago')
+      console.log(resp.data)
+      setMetodosPago(resp.data)
+
       setIsRating(false)
-      setViajeActivo(null)
-      setBarrios([])
+      setIsPaying(true)
     }
 
   }
 
+  const handlePagar = async (e) => {
+    e.preventDefault()
+
+    const metodoPago = e.target[0].value
+
+    if(metodoPago === 'Selecciona un método') return toast.error('Debes seleccionar un método de pago')
+
+    console.log({
+      viajeActivo,
+      metodoPago
+    })
+
+    //hacer peticion y obtener precio del recorrido
+    const resp = await axios.get(`http://localhost:3000/precio-recorrido/${viajeActivo.recorridoId}`)
+    const precio = resp.data.precio
+
+    const resp2 = await axios.post('http://localhost:3000/pago', {
+      Total: precio,
+      metodoPagoId: Number(metodoPago)
+    })
+
+    if(resp.status === 200) {
+
+      const resp3 = await axios.post('http://localhost:3000/generar-factura', {
+        fechahora: new Date(),
+        viajeId: viajeActivo.idViaje,
+        pagoId: resp2.data.idPago
+      })
+
+      if(resp3.status === 200) {
+        toast.success('Pago realizado con éxito! ✅ - Muchas gracias por usar UrbanNav')
+
+        setIsRating(false)
+        setViajeActivo(null)
+        setIsPaying(false)
+      }
+
+    }
+    // if(resp.status === 200) {
+    //   toast.success('Pago realizado con éxito! ✅')
+
+    //   setIsRating(false)
+    //   setViajeActivo(null)
+    //   setEsperandoServicios(false)
+    //   setBarrios([])
+    // }
+  } 
+
   return (
     <div className='animate__animated animate__fadeIn'>
 
+          {
+              (paying && !isRating) && (
+                <>
+                  <h1 className='text-warning text-center fw-bold'>Pagar viaje</h1>
+                  <Form onSubmit={handlePagar} className='animate__animated animate__fadeIn'>
+                      {/* iterate the metodoPago and create a select */}
+                      <select className="form-select" aria-label="Default select example">
+                        <option selected>Selecciona un método</option>
+                        {
+                          metodosPago.length > 0 && metodosPago.map(metodo => (
+                            <option key={metodo.idMetodoPago} value={metodo.idMetodoPago}>{metodo.Nombre}</option>
+                          ))
+                        }
+                      </select>
+
+                      <Button variant="primary" type="submit" className='mt-2'>
+                        Pagar
+                      </Button>
+
+                  </Form>
+                </>
+              )
+            }
+
       {
-          (isRating) && (
+          (isRating && !paying) && (
             <>
               <h1 className='text-warning text-center fw-bold'>Califica al conductor</h1>
               <Form onSubmit={handleCalificarConductor} className='animate__animated animate__fadeIn'>
@@ -402,7 +482,7 @@ const Cliente = () => {
         }
 
         {
-          !viajeActivo && !isRating && <>
+          !viajeActivo && !isRating && !paying && <>
             <p className='text-secondary'>Es hora de pedir viajes.</p>
             <h1 className='text-white text-center fw-bold'>Solicita tu servicio</h1>
           </>
@@ -430,7 +510,7 @@ const Cliente = () => {
             }
 
          {
-          !loading && !viajeActivo && !isRating && <button type="submit" className='btn btn-primary mt-2'>Solicitar</button>
+          !loading && !viajeActivo && !isRating && !paying && <button type="submit" className='btn btn-primary mt-2'>Solicitar</button>
          }
           </form>
             </>
@@ -440,7 +520,7 @@ const Cliente = () => {
           }
 
           {
-            viajeActivo && !isRating && <>
+            viajeActivo && !isRating && !paying && <>
 
               <h2 className="text-warning text-center">Estás en viaje</h2>
 

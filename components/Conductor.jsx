@@ -37,7 +37,7 @@ const Conductor = () => {
 
     // if(localStorage.getItem('barrios')) setBarrios(JSON.parse(localStorage.getItem('barrios')))
     // else getBarrios()
-  }, [])
+  }, [viajeActivo])
 
   useEffect(() => {
   
@@ -201,7 +201,10 @@ const Conductor = () => {
 
       socket.emit('servicio-solicitud-a-cliente', {
         conductor,
-        servicio,
+        servicio: {
+          ...servicio,
+          promedio
+        },
         cliente: servicio.cliente,
       })
 
@@ -234,8 +237,6 @@ const Conductor = () => {
     })
 
     setIsRating(true)
-
-    // TODO: ENVIAR FACTURA
   }
 
   const llegoOrigen = async () => {
@@ -273,14 +274,12 @@ const Conductor = () => {
 
     if(response2.status === 200) {
       toast.success('Calificación enviada con éxito! ✅')
+
       setIsRating(false)
       setViajeActivo(null)
       setEsperandoServicios(false)
       setBarrios([])
     }
-
-    
-
   }
 
   return (
@@ -289,6 +288,8 @@ const Conductor = () => {
         <div className="row">
           <div className="col-2"></div>
           <div className="col-8">
+
+            
 
             {
               (isRating) && (
@@ -300,6 +301,8 @@ const Conductor = () => {
                         type="text"
                         placeholder="Comentario"
                       />
+                    </Form.Group>
+
 
                       <Form.Check
                         type="radio"
@@ -351,9 +354,8 @@ const Conductor = () => {
                       />
 
 
-                    </Form.Group>
 
-                    <Button variant="primary" type="submit">
+                    <Button variant="primary" type="submit" className="mt-2">
                       Calificar
                     </Button>
                   </Form>
