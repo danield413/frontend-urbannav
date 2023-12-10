@@ -283,7 +283,7 @@ const Conductor = () => {
   }
 
   return (
-    <div className='animate__animated animate__fadeIn'>
+    <div className='animate__animated animate__fadeIn dash'>
         <p className='text-secondary'>Es hora de hacer viajes.</p>
         <div className="row">
           <div className="col-2"></div>

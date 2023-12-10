@@ -34,6 +34,9 @@ const NavTop = () => {
             <>
               <Link href="/login" className={`fw-bold text-secondary px-2 link-underline-dark ${ currentRoute === '/login' && 'text-white' }`} >Inicio sesión</Link>
               <Link href="/register" className={`fw-bold text-secondary px-2 link-underline-dark ${ currentRoute === '/register' && 'text-white' }`}>Registro</Link>
+              <Link href="/pqrs" className={`fw-bold text-secondary px-2 link-underline-dark ${ currentRoute === '/pqrs' && 'text-white' }`}>PQRS</Link>
+              <Link href="/empresa" className={`fw-bold text-secondary px-2 link-underline-dark ${ currentRoute === '/empresa' && 'text-white' }`}>Empresa</Link>
+
             </>
           }
 

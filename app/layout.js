@@ -5,6 +5,7 @@ import MiContexto from '@/context/contextApp'
 import { Providers } from './providers'
 import { Toaster } from 'react-hot-toast'
 import 'animate.css';
+import Footer from '@/components/Footer'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -36,6 +37,7 @@ export default function RootLayout({ children }) {
           <div className="mt-5 bg-dark">
           {children}
           </div>
+          <Footer />
         </Providers>
         </body>
     </html>

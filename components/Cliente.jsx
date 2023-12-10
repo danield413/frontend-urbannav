@@ -383,8 +383,87 @@ const Cliente = () => {
     // }
   } 
 
+  const addPreferencia = () => {
+    toast((t) => (
+      <span>
+        ¿Quieres añadir preferencias de viaje?
+        <button onClick={() => {
+          toast.dismiss(t.id)
+         
+        }} className='btn btn-success m-2'>
+          NO
+        </button>
+        <button onClick={ async () => {
+          toast.dismiss(t.id)
+          
+          toast('Añade tus preferencias de viaje')
+          
+          const { value: formValues } = await Swal.fire({
+            title: "Preferencias de viaje",
+            html: `
+              <input id="swal-input1" class="swal2-input" placeholder="Escribe tus preferencias">
+            `,
+            focusConfirm: false,
+            preConfirm: () => {
+              return [
+                document.getElementById("swal-input1").value
+              ];
+            },
+            confirmButtonText: "Enviar",
+            denyButtonText: "Cancelar",
+            showDenyButton: true,
+          });
+          if (formValues) {
+            const preferencia = formValues[0];
+            const usuario = await axios.get(`http://localhost:3001/usuario/${user.idMongoDB}`)
+            const clienteId = usuario.data.usuarioEnLogica.idCliente
+
+            //post to preferencia and pass the token in the header
+            const response = await axios.post('http://localhost:3000/preferencia', {
+              preferencia,
+              clienteId
+            })
+
+            if(response.status === 200) {
+              toast.success('Preferencia añadida')
+            }
+          }
+
+        }} className='btn btn-primary m-2'>
+          SI, AÑADIR
+        </button>
+      </span>
+    ))
+  }
+
+  const verComentariosConductor = async () => {
+
+    const resp = await axios.get(`http://localhost:3000/resena-viaje-conductor`)
+    console.log(resp.data)
+    console.log(viajeActivo)
+
+    const resenas = resp.data.filter(r => r.viaje.conductor.idConductor === viajeActivo.conductor.idConductor)
+
+    // mostrar en un sweet alert los comentarios
+    let comentarios = ''
+    resenas.forEach(r => {
+     comentarios += `<div style="margin-bottom: 10px" >${r.comentario} calificación: ${r.puntuacionConductor.puntuacion} estrellas </div>`
+    })
+
+    Swal.fire({
+      title: 'Comentarios de este conductor',
+      html: `<div>
+        ${comentarios}
+      </div>`
+    })
+
+
+  }
+
   return (
-    <div className='animate__animated animate__fadeIn'>
+    <div className='animate__animated animate__fadeIn dash'>
+
+      <button className='btn btn-outline-primary mb-2' onClick={addPreferencia}>Añadir preferencias de viaje</button>
 
           {
               (paying && !isRating) && (
@@ -536,6 +615,8 @@ const Cliente = () => {
                 <p>Conductor: <strong>{viajeActivo.conductor.primerNombre} {viajeActivo.conductor.primerApellido}</strong></p>
                 <button className="btn btn-danger" onClick={handlePanicButton}>Botón de pánico</button>
               </div>
+              <button className="btn btn-warning mt-2" onClick={verComentariosConductor}>Ver comentarios de este conductor</button>
+
             
             </>
            }
