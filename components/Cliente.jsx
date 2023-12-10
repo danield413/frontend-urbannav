@@ -420,7 +420,7 @@ const Cliente = () => {
 
             //post to preferencia and pass the token in the header
             const response = await axios.post('http://localhost:3000/preferencia', {
-              preferencia,
+              descripcion: preferencia,
               clienteId
             })
 
