@@ -20,6 +20,16 @@ export default function PQRSPage() {
         const email = e.target[1].value
         const message = e.target[2].value
 
+        if(name === '' || email === '' || message === '') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Todos los campos son obligatorios',
+                showConfirmButton: false,
+                timer: 1500
+              })
+            return
+        }
+
         const pqrsResponse = await axios.get('http://localhost:3001/variable/6531300f651aa729b8408de9')
         const to = pqrsResponse.data.valorVariable
 
@@ -62,7 +72,7 @@ export default function PQRSPage() {
         <h1 className="text-warning fw-bold display-2 mt-2">PQRS</h1>
         <h2 className="text-white fw-bold display-5">Peticiones, Quejas, Reclamos y Sugerencias</h2>
 
-        <div className="row">
+        <div className="row mb-5">
             <div className="col"></div>
             <div className="col">
             <Form className="mt-5" onSubmit={handleSubmit}>
