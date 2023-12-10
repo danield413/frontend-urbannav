@@ -129,6 +129,9 @@ const Cliente = () => {
       console.log('servicio-solicitud-de-conductor', data)
       toast.success(`El conductor: ${data.conductor.primerNombre} ${data.conductor.primerApellido} quiere tomar tu servicio!`)
       
+      if(!data.servicio.promedio) {
+        data.servicio.promedio = 0
+      }
       
       toast((t) => (
         <span>
